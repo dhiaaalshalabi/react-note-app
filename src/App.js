@@ -2,15 +2,20 @@ import React from 'react'
 import './App.css'
 import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
-// import { data } from './data'
 import Split from 'react-split'
 import { nanoid } from 'nanoid'
 
 function App() {
-  const [notes, setNotes] = React.useState([])
+  const [notes, setNotes] = React.useState(
+    () => JSON.parse(localStorage.getItem("notes")) || []
+  )
   const [currentNoteId, setCurrentNoteId] = React.useState(
     (notes[0] && notes[0].id) || ''
   )
+
+  React.useEffect(() => {
+    localStorage.setItem("notes", JSON.stringify(notes))
+  }, [notes])
 
   function createNewNote() {
     const newNote = {
@@ -22,11 +27,25 @@ function App() {
   }
 
   function updateNote(text) {
-    setNotes(oldNotes => oldNotes.map(oldNote => {
-      return oldNote.id === currentNoteId
-        ? { ...oldNote, body: text }
-        : oldNote
-    }))
+    setNotes(prevNotes => {
+      const newArray = []
+      for (let i = 0; i < prevNotes.length; i++) {
+        const prevNote = prevNotes[i]
+        if (prevNote.id === currentNoteId) {
+          newArray.unshift({ ...prevNote, body: text })
+        } else {
+          newArray.push(prevNote)
+        }
+      }
+      return newArray
+    })
+  }
+
+  function deleteNote(event, noteId) {
+    event.stopPropagation()
+    setNotes(prevNotes => {
+      return prevNotes.filter(note => note.id !== noteId)
+    })
   }
 
   function findCurrentNote() {
@@ -50,6 +69,7 @@ function App() {
               currentNote={findCurrentNote()}
               setCurrentNoteId={setCurrentNoteId}
               newNote={createNewNote}
+              deleteNote={deleteNote}
             />
             {
               currentNoteId &&
